@@ -40,7 +40,7 @@ jobs:
         python fantrax_scraper.py
     
     - name: Upload results as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: auction-results-${{ github.run_number }}
