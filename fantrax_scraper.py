@@ -66,56 +66,30 @@ def parse_auction_data(raw_text):
     
     # If there are multiple players, need to determine which is claim vs drop
     if len(all_player_names) > 1:
-        # Look for bid/transaction keywords to identify the claimed player
-        first_player_idx = all_player_names[0][0]
-        second_player_idx = all_player_names[1][0]
+        # Simple approach: look at the position of players in the transaction text
+        # In Fantrax, the pattern is usually: Claimed Player ... transaction info ... Dropped Player
         
-        # Check if first player has bid context (BID, PTY, SUBMITTED)
-        first_has_bid = False
-        for i in range(first_player_idx, min(first_player_idx + 8, len(lines))):
-            if any(keyword in lines[i] for keyword in ['BID', 'PTY', 'SUBMITTED']):
-                first_has_bid = True
-                break
+        # Check if this looks like a claim/drop transaction by looking for bid keywords
+        has_transaction_keywords = any(keyword in raw_text for keyword in ['BID', 'SUBMITTED', 'PTY'])
         
-        # Check if second player has bid context  
-        second_has_bid = False
-        for i in range(second_player_idx, min(second_player_idx + 8, len(lines))):
-            if any(keyword in lines[i] for keyword in ['BID', 'PTY', 'SUBMITTED']):
-                second_has_bid = True
-                break
-        
-        # If only first player has bid context, second is drop
-        if first_has_bid and not second_has_bid:
-            data['drop_player'] = all_player_names[1][1]
-        # If only second player has bid context, first is drop (swap them)
-        elif second_has_bid and not first_has_bid:
-            data['player_name'] = all_player_names[1][1]
-            data['drop_player'] = all_player_names[0][1]
-            # Re-extract details for the actual claimed player
-            relevant_lines = lines[all_player_names[1][0]:all_player_names[1][0]+8]
-            data = {'player_name': all_player_names[1][1]}
-            positions = []
-            for line in relevant_lines:
-                if re.search(r'[A-Z][a-z]+\s+[A-Z][a-z]+', line) and line != data['player_name']:
-                    break
-                positions.extend(re.findall(r'\b(SP|RP|C|1B|2B|3B|SS|OF|DH)\b', line))
-                if 'team' not in data:
-                    teams = re.findall(r'\b([A-Z]{3})\b', line)
-                    for team in teams:
-                        if team not in {'BID', 'PTY', 'POS', 'STA', 'DEL', 'CDT'}:
-                            data['team'] = team
-                            break
-                if 'bid_time' not in data:
-                    time_match = re.search(r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d+,?\s+\d+:\d+\s+(AM|PM)', line)
-                    if time_match:
-                        data['bid_time'] = time_match.group(0)
-            if positions:
-                unique_pos = list(set(positions))
-                if len(unique_pos) > 1:
-                    data['position'] = '/'.join(unique_pos)
-                else:
-                    data['position'] = positions[0]
-            data['drop_player'] = all_player_names[0][1]
+        if has_transaction_keywords:
+            # First player mentioned is usually the claim, last player is the drop
+            claimed_player = all_player_names[0][1]
+            dropped_player = all_player_names[-1][1]
+            
+            # Make sure they're different players
+            if claimed_player != dropped_player:
+                data['player_name'] = claimed_player
+                data['drop_player'] = dropped_player
+                
+                # Use the first player's details for the main transaction
+                # (the relevant_lines are already set for the first player above)
+            else:
+                # Same player mentioned twice, treat as single claim
+                data['player_name'] = claimed_player
+        else:
+            # No clear transaction keywords, treat first player as claim
+            data['player_name'] = all_player_names[0][1]
     
     return data
 
@@ -275,7 +249,7 @@ def get_auction_data():
                 if deadline_match:
                     deadline_text = f" - Deadline {deadline_match.group(0)}"
             
-            email_text = f"Fantasy Baseball Auction Alert{deadline_text}\n\n"
+            email_text = f"Fantasy Baseball Auction Alert{deadline_text} - {datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n"
             
             # Add deadline to body if found (without emoji to avoid encoding issues)
             if auction_deadline:
