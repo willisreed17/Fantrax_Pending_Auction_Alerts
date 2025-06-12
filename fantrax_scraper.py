@@ -66,30 +66,39 @@ def parse_auction_data(raw_text):
     
     # If there are multiple players, need to determine which is claim vs drop
     if len(all_player_names) > 1:
-        # Simple approach: look at the position of players in the transaction text
-        # In Fantrax, the pattern is usually: Claimed Player ... transaction info ... Dropped Player
+        print(f"DEBUG: Found {len(all_player_names)} players: {[p[1] for p in all_player_names]}")
         
-        # Check if this looks like a claim/drop transaction by looking for bid keywords
-        has_transaction_keywords = any(keyword in raw_text for keyword in ['BID', 'SUBMITTED', 'PTY'])
+        # Look for the pattern where claimed player appears near bid info, dropped player appears at end
+        claimed_player = None
+        dropped_player = None
         
-        if has_transaction_keywords:
-            # First player mentioned is usually the claim, last player is the drop
-            claimed_player = all_player_names[0][1]
-            dropped_player = all_player_names[-1][1]
+        # Check each player's context for bid keywords
+        for i, (line_idx, player_name) in enumerate(all_player_names):
+            player_context = lines[line_idx:line_idx+5]  # Check next 5 lines after player name
+            has_bid_context = any(keyword in ' '.join(player_context) for keyword in ['BID', 'SUBMITTED', 'PTY'])
             
-            # Make sure they're different players
-            if claimed_player != dropped_player:
-                data['player_name'] = claimed_player
-                data['drop_player'] = dropped_player
-                
-                # Use the first player's details for the main transaction
-                # (the relevant_lines are already set for the first player above)
-            else:
-                # Same player mentioned twice, treat as single claim
-                data['player_name'] = claimed_player
-        else:
-            # No clear transaction keywords, treat first player as claim
+            print(f"DEBUG: Player {player_name} - has bid context: {has_bid_context}")
+            
+            if has_bid_context and not claimed_player:
+                claimed_player = player_name
+            elif not has_bid_context and i > 0:  # Not first player and no bid context = likely drop
+                dropped_player = player_name
+        
+        # Set the results
+        if claimed_player:
+            data['player_name'] = claimed_player
+            print(f"DEBUG: Set claimed player: {claimed_player}")
+        
+        if dropped_player and dropped_player != claimed_player:
+            data['drop_player'] = dropped_player
+            print(f"DEBUG: Set dropped player: {dropped_player}")
+        
+        # If we couldn't determine clearly, fall back to first=claim, last=drop
+        if not claimed_player:
             data['player_name'] = all_player_names[0][1]
+            if len(all_player_names) > 1:
+                data['drop_player'] = all_player_names[-1][1]
+            print(f"DEBUG: Fallback - claim: {data['player_name']}, drop: {data.get('drop_player', 'None')}")
     
     return data
 
