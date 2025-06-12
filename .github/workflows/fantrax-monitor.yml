@@ -36,8 +36,26 @@ jobs:
       env:
         FANTRAX_USERNAME: ${{ secrets.FANTRAX_USERNAME }}
         FANTRAX_PASSWORD: ${{ secrets.FANTRAX_PASSWORD }}
+        SMTP_SERVER: smtp.gmail.com
+        SMTP_PORT: 587
+        SENDER_EMAIL: ${{ secrets.EMAIL_USERNAME }}
+        SENDER_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        EMAIL_SUBJECT: "Current Fantrax Auctions - Will Process at "
       run: |
-        python fantrax_scraper.py
+        echo "Starting scraper with debug info..."
+        echo "Python version: $(python --version)"
+        echo "Chrome version: $(google-chrome --version)"
+        echo "Environment check:"
+        echo "FANTRAX_USERNAME is set: $([[ -n "$FANTRAX_USERNAME" ]] && echo "Yes" || echo "No")"
+        echo "FANTRAX_PASSWORD is set: $([[ -n "$FANTRAX_PASSWORD" ]] && echo "Yes" || echo "No")"
+        echo "GITHUB_ACTIONS is set: $GITHUB_ACTIONS"
+        echo ""
+        echo "Running script..."
+        python fantrax_scraper.py || echo "Script failed with exit code $?"
+        
+        echo "Running email sender..."
+        python send_email.py || echo "Email sending failed with exit code $?"
     
     - name: Upload results as artifact
       uses: actions/upload-artifact@v4
@@ -47,17 +65,3 @@ jobs:
         path: |
           auction_players.json
           email_summary.txt
-    
-    - name: Send email notification
-      if: success()
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: smtp.gmail.com
-        server_port: 587
-        username: ${{ secrets.EMAIL_USERNAME }}
-        password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: "Fantasy Baseball Auction Alert - ${{ github.run_number }}"
-        body: file://email_summary.txt
-        to: ${{ secrets.EMAIL_TO }}
-        from: ${{ secrets.EMAIL_USERNAME }}
-        attachments: auction_players.json
