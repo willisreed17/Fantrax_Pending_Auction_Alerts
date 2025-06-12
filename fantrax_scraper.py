@@ -275,7 +275,7 @@ def get_auction_data():
                 if deadline_match:
                     deadline_text = f" - Deadline {deadline_match.group(0)}"
             
-            email_text = f"Fantasy Baseball Auction Alert{deadline_text} - {datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n"
+            email_text = f"Fantasy Baseball Auction Alert{deadline_text}\n\n"
             
             # Add deadline to body if found (without emoji to avoid encoding issues)
             if auction_deadline:
