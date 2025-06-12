@@ -66,7 +66,7 @@ jobs:
             echo "email_summary.txt NOT FOUND"
         fi
         echo ""
-        python send_email.py || echo "Email sending failed with exit code $?"
+        python Email_results.py || echo "Email sending failed with exit code $?"
     
     - name: Upload results as artifact
       uses: actions/upload-artifact@v4
