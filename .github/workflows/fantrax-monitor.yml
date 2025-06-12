@@ -55,6 +55,15 @@ jobs:
         python fantrax_scraper.py || echo "Script failed with exit code $?"
         
         echo "Running email sender..."
+        echo "Checking email_summary.txt contents:"
+        if [ -f "email_summary.txt" ]; then
+            echo "File exists. First 10 lines:"
+            head -10 email_summary.txt
+            echo "File length: $(wc -c < email_summary.txt) characters"
+        else
+            echo "email_summary.txt NOT FOUND"
+        fi
+        echo ""
         python send_email.py || echo "Email sending failed with exit code $?"
     
     - name: Upload results as artifact
