@@ -32,7 +32,7 @@ jobs:
       run: |
         pip install selenium webdriver-manager requests
     
-    - name: Run Fantrax scraper
+    - name: Run Fantrax scraper and send email
       env:
         FANTRAX_USERNAME: ${{ secrets.FANTRAX_USERNAME }}
         FANTRAX_PASSWORD: ${{ secrets.FANTRAX_PASSWORD }}
@@ -49,11 +49,13 @@ jobs:
         echo "Environment check:"
         echo "FANTRAX_USERNAME is set: $([[ -n "$FANTRAX_USERNAME" ]] && echo "Yes" || echo "No")"
         echo "FANTRAX_PASSWORD is set: $([[ -n "$FANTRAX_PASSWORD" ]] && echo "Yes" || echo "No")"
+        echo "SENDER_EMAIL is set: $([[ -n "$SENDER_EMAIL" ]] && echo "Yes" || echo "No")"
+        echo "EMAIL_TO is set: $([[ -n "$EMAIL_TO" ]] && echo "Yes" || echo "No")"
         echo "GITHUB_ACTIONS is set: $GITHUB_ACTIONS"
         echo ""
         echo "Running script..."
         python fantrax_scraper.py || echo "Script failed with exit code $?"
-        
+        echo ""
         echo "Running email sender..."
         echo "Checking email_summary.txt contents:"
         if [ -f "email_summary.txt" ]; then
