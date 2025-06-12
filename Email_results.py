@@ -7,7 +7,28 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
 def load_email_config():
-    """Load email configuration from config.json file"""
+    """Load email configuration from environment variables (GitHub Actions) or config.json (local)"""
+    
+    # Try environment variables first (GitHub Actions)
+    if all(os.getenv(var) for var in ['SENDER_EMAIL', 'SENDER_PASSWORD', 'EMAIL_TO']):
+        config = {
+            'smtp_server': os.getenv('SMTP_SERVER', 'smtp.gmail.com'),
+            'smtp_port': int(os.getenv('SMTP_PORT', 587)),
+            'sender_email': os.getenv('SENDER_EMAIL'),
+            'sender_password': os.getenv('SENDER_PASSWORD'),
+            'email_to': os.getenv('EMAIL_TO'),
+            'email_subject': os.getenv('EMAIL_SUBJECT', 'Current Fantrax Auctions - Will Process at ')
+        }
+        
+        # Optional CC
+        if os.getenv('EMAIL_CC'):
+            config['email_cc'] = os.getenv('EMAIL_CC')
+            
+        print("✓ Using environment variables for email config")
+        print(f"✓ Using email subject: '{config['email_subject']}'")
+        return config
+    
+    # Fallback to config.json for local development
     try:
         with open('config.json', 'r') as f:
             config = json.load(f)
@@ -29,12 +50,13 @@ def load_email_config():
             return None
         
         # Debug: show what email_subject was loaded
+        print(f"✓ Using config.json for email config")
         print(f"✓ Using email subject: '{config['email_subject']}'")
         
         return config
         
     except FileNotFoundError:
-        print("config.json not found.")
+        print("❌ No email configuration found (neither environment variables nor config.json)")
         return None
 
 def send_auction_email():
@@ -140,7 +162,7 @@ def send_auction_email():
         
         msg['Subject'] = email_subject
         
-        # Add body to email
+        # Add body to email (NO ATTACHMENTS)
         msg.attach(MIMEText(email_body, 'plain'))
         
         # Connect to server and send email
