@@ -198,25 +198,24 @@ def get_auction_data():
                 
                 # Check ALL text for "Free Agent Claims" deadline (separate from player filtering)
                 if text and len(text) > 5:
-                    # Look for multiple patterns that might contain the deadline
-                    if ("Free Agent Claims" in text or 
-                        "Claims" in text or 
-                        "Deadline" in text or
-                        "Jun 12" in text or
-                        "6/12" in text):
-                        
+                    # Look for "Free Agent Claims" followed by deadline
+                    if "Free Agent Claims" in text:
                         print(f"Found potential deadline text: {text[:100]}...")
-                        parsed_deadline = parse_auction_data(text)
                         
-                        if parsed_deadline.get('bid_time'):
-                            print(f"  - Extracted bid_time: {parsed_deadline.get('bid_time')}")
-                            if parsed_deadline.get('player_name'):
-                                print(f"  - Player name: {parsed_deadline.get('player_name')}")
-                            
-                            # Accept any deadline date found (not just from "Free Agent Claims")
-                            if not auction_deadline:  # Take the first deadline found
+                        # Look for deadline time in format "Day Month DD, H:MM AM/PM CDT" (the actual deadline)
+                        deadline_match = re.search(r'(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d+,?\s+\d+:\d+\s+(AM|PM)', text)
+                        if deadline_match and not auction_deadline:
+                            auction_deadline = deadline_match.group(0)
+                            print(f"✓ Set auction deadline from day-format: {auction_deadline}")
+                            continue
+                        
+                        # Fallback: look for any time pattern but only if it's NOT associated with a player bid
+                        if not auction_deadline:
+                            parsed_deadline = parse_auction_data(text)
+                            if parsed_deadline.get('bid_time') and not parsed_deadline.get('player_name'):
+                                # Only use as deadline if no player name (meaning it's not a bid time)
                                 auction_deadline = parsed_deadline.get('bid_time')
-                                print(f"✓ Set auction deadline: {auction_deadline}")
+                                print(f"✓ Set auction deadline from time-only: {auction_deadline}")
                 
                 # Original player filtering logic (unchanged)
                 if (text and len(text) > 20 and text not in seen_texts and
@@ -309,15 +308,28 @@ def get_auction_data():
         driver.quit()
 
 if __name__ == "__main__":
-    print("Starting Fantrax Auction Monitor...")
-    players = get_auction_data()
-    
-    if players:
-        print("\nEmail summary:")
-        print("="*50)
-        with open('email_summary.txt', 'r', encoding='utf-8') as f:
-            print(f.read())
-    else:
-        print("No auction players found.")
-    
-    print("Done.")
+    try:
+        print("Starting Fantrax Auction Monitor...")
+        print(f"Python working directory: {os.getcwd()}")
+        print(f"Files in directory: {os.listdir('.')}")
+        
+        players = get_auction_data()
+        
+        if players:
+            print("\nEmail summary:")
+            print("="*50)
+            try:
+                with open('email_summary.txt', 'r', encoding='utf-8') as f:
+                    print(f.read())
+            except FileNotFoundError:
+                print("email_summary.txt not found")
+        else:
+            print("No auction players found.")
+        
+        print("Done.")
+        
+    except Exception as e:
+        print(f"FATAL ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        exit(1)
