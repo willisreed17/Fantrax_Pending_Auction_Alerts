@@ -1,0 +1,63 @@
+name: Fantrax Auction Monitor
+
+on:
+  schedule:
+    # Run every 2 hours from 8AM to 10PM CDT
+    - cron: '0 13,15,17,19,21,23,1,3 * * *'  # UTC times
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  scrape-fantrax:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install Chrome
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget unzip
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+    
+    - name: Install Python dependencies
+      run: |
+        pip install selenium webdriver-manager requests
+    
+    - name: Run Fantrax scraper
+      env:
+        FANTRAX_USERNAME: ${{ secrets.FANTRAX_USERNAME }}
+        FANTRAX_PASSWORD: ${{ secrets.FANTRAX_PASSWORD }}
+      run: |
+        python fantrax_scraper.py
+    
+    - name: Upload results as artifact
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: auction-results-${{ github.run_number }}
+        path: |
+          auction_players.json
+          email_summary.txt
+    
+    - name: Send email notification
+      if: success()
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: "Fantasy Baseball Auction Alert - ${{ github.run_number }}"
+        body: file://email_summary.txt
+        to: ${{ secrets.EMAIL_TO }}
+        from: ${{ secrets.EMAIL_USERNAME }}
+        attachments: auction_players.json
