@@ -69,21 +69,28 @@ def send_auction_email():
     
     # Check if email summary file exists
     if not os.path.exists('email_summary.txt'):
-        print("email_summary.txt not found. Run the auction scraper first.")
+        print("❌ email_summary.txt not found. Run the auction scraper first.")
         return False
     
     # Read email content
     try:
         with open('email_summary.txt', 'r') as f:
             email_body = f.read()
+        print(f"✓ Read email_summary.txt - {len(email_body)} characters")
+        print(f"First 200 characters: {email_body[:200]}...")
     except Exception as e:
-        print(f"Error reading email_summary.txt: {e}")
+        print(f"❌ Error reading email_summary.txt: {e}")
         return False
     
     # Check if there are actually players to report
-    if "Found 0 player(s)" in email_body or len(email_body.strip()) < 50:
-        print("No auction players found - not sending email.")
+    if "Found 0 player(s)" in email_body:
+        print("❌ Found 0 players - not sending email.")
         return True
+    elif len(email_body.strip()) < 50:
+        print(f"❌ Email body too short ({len(email_body.strip())} chars) - not sending email.")
+        return True
+    else:
+        print(f"✓ Email body looks good - proceeding to send email")
     
     # Extract auction deadline from email body and create custom subject
     auction_deadline = None
