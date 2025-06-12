@@ -1,5 +1,6 @@
 import requests
 import json
+import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -119,18 +120,41 @@ def parse_auction_data(raw_text):
     return data
 
 def get_auction_data():
-    # Load config
-    try:
-        config_data = json.load(open('config.json'))
-    except Exception as e:
-        print(f"Error loading config.json: {e}")
-        return []
+    # Load config from environment variables (GitHub Actions) or config file (local)
+    username = os.getenv('FANTRAX_USERNAME')
+    password = os.getenv('FANTRAX_PASSWORD')
+    
+    if not username or not password:
+        # Fallback to config.json for local development
+        try:
+            config_data = json.load(open('config.json'))
+            username = config_data['username']
+            password = config_data['password']
+            print("Using config.json for credentials")
+        except Exception as e:
+            print(f"Error loading credentials: {e}")
+            return []
+    else:
+        print("Using environment variables for credentials")
     
     print("=== Fantrax Auction Monitor ===")
     
-    # Setup Chrome
+    # Setup Chrome with options for both local and headless (GitHub Actions)
     service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service)
+    chrome_options = webdriver.ChromeOptions()
+    
+    # Add headless options for GitHub Actions
+    if os.getenv('GITHUB_ACTIONS'):
+        print("Running in GitHub Actions - using headless mode")
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("--disable-extensions")
+        chrome_options.add_argument("--disable-plugins")
+    
+    driver = webdriver.Chrome(service=service, options=chrome_options)
     
     try:
         # Login
@@ -147,9 +171,9 @@ def get_auction_data():
         pass_field = driver.find_element(By.NAME, "password")
         
         user_field.clear()
-        user_field.send_keys(config_data['username'])
+        user_field.send_keys(username)
         pass_field.clear()
-        pass_field.send_keys(config_data['password'])
+        pass_field.send_keys(password)
         pass_field.send_keys(Keys.RETURN)
         time.sleep(3)
         
