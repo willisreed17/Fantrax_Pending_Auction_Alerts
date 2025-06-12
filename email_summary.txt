@@ -1,0 +1,31 @@
+Fantasy Baseball Auction Alert - Deadline Jun 12 - 2025-06-11 21:52
+
+Auction Deadline: Jun 12, 2:00 AM
+
+Found 6 player(s) up for auction:
+
+1. Jo Adell
+   Position: OF
+   Team: LAA
+
+2. Will Warren
+   Position: SP
+   Team: NYY
+
+3. Ernie Clement
+   Position: SS/2B/3B
+   Team: TOR
+
+4. Royce Lewis
+   Position: 3B
+   Team: MIN
+
+5. Adrian Houser
+   Position: SP/RP
+   Team: CHW
+
+6. Michael Kopech
+   Position: RP
+   Team: LAD
+   Dropping: Justin Martinez
+

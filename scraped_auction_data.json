@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Davis Martin\nSP\n- CHW\nPTY\n1\nBID\nSUBMITTED (CDT)\nJun 10, 1:21 PM\nPOS\nSP\nSTA\nRes\nDEL\ndrag_handle",
+    "tag": "div",
+    "class": "cdk-drop-list supertable supertable--pending-transaction-table ng-star-inserted",
+    "data_attributes": {}
+  },
+  {
+    "text": "drag_handle",
+    "tag": "button",
+    "class": "cdk-drag-handle _pending-transaction-move mdc-icon-button mat-mdc-icon-button mat-sport mat-mdc-button-base",
+    "data_attributes": {}
+  }
+]

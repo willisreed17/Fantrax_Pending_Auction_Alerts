@@ -1,0 +1,33 @@
+[
+  {
+    "player_name": "Jo Adell",
+    "team": "LAA",
+    "position": "OF"
+  },
+  {
+    "player_name": "Will Warren",
+    "team": "NYY",
+    "position": "SP"
+  },
+  {
+    "player_name": "Ernie Clement",
+    "team": "TOR",
+    "position": "SS/2B/3B"
+  },
+  {
+    "player_name": "Royce Lewis",
+    "team": "MIN",
+    "position": "3B"
+  },
+  {
+    "player_name": "Adrian Houser",
+    "team": "CHW",
+    "position": "SP/RP"
+  },
+  {
+    "player_name": "Michael Kopech",
+    "team": "LAD",
+    "position": "RP",
+    "drop_player": "Justin Martinez"
+  }
+]

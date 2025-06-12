@@ -1,0 +1,132 @@
+{
+  "timestamp": "2025-06-10T14:42:04.645279",
+  "total_players": 21,
+  "players": [
+    {
+      "name": "Davis Martin",
+      "position": "SP",
+      "team": "CHW",
+      "bid_time": "Jun 10, 1:21 PM"
+    },
+    {
+      "name": "Pending Transactions",
+      "position": null,
+      "team": null,
+      "bid_time": null
+    },
+    {
+      "name": "Davis Martin",
+      "position": "SP",
+      "team": "CHW",
+      "bid_time": "Jun 10, 1:21 PM"
+    },
+    {
+      "name": "Jo Adell",
+      "position": "OF",
+      "team": "LAA",
+      "bid_time": "Jun 10, 2:24 PM"
+    },
+    {
+      "name": "AJ Smith-Shawver",
+      "position": "SP",
+      "team": "ATL",
+      "bid_time": "Jun 10, 2:25 PM"
+    },
+    {
+      "name": "group",
+      "position": null,
+      "team": null,
+      "bid_time": null
+    },
+    {
+      "name": "Fantasy Advice",
+      "position": null,
+      "team": null,
+      "bid_time": null
+    },
+    {
+      "name": "Claim/Drops",
+      "position": null,
+      "team": null,
+      "bid_time": null
+    },
+    {
+      "name": "Free Agent Claims",
+      "position": null,
+      "team": null,
+      "bid_time": "Jun 12, 2:00 AM"
+    },
+    {
+      "name": "Claim Budget Remaining:",
+      "position": null,
+      "team": null,
+      "bid_time": null
+    },
+    {
+      "name": "Davis Martin",
+      "position": "SP",
+      "team": "CHW",
+      "bid_time": null
+    },
+    {
+      "name": null,
+      "position": "SP",
+      "team": "CHW",
+      "bid_time": null
+    },
+    {
+      "name": "SUBMITTED (CDT)",
+      "position": null,
+      "team": null,
+      "bid_time": "Jun 10, 1:21 PM"
+    },
+    {
+      "name": null,
+      "position": "SP",
+      "team": null,
+      "bid_time": null
+    },
+    {
+      "name": "Jo Adell",
+      "position": "OF",
+      "team": "LAA",
+      "bid_time": null
+    },
+    {
+      "name": null,
+      "position": "OF",
+      "team": "LAA",
+      "bid_time": null
+    },
+    {
+      "name": "SUBMITTED (CDT)",
+      "position": null,
+      "team": null,
+      "bid_time": "Jun 10, 2:24 PM"
+    },
+    {
+      "name": null,
+      "position": "OF",
+      "team": null,
+      "bid_time": null
+    },
+    {
+      "name": "AJ Smith-Shawver",
+      "position": "SP",
+      "team": "ATL",
+      "bid_time": null
+    },
+    {
+      "name": null,
+      "position": "SP",
+      "team": "ATL",
+      "bid_time": null
+    },
+    {
+      "name": "SUBMITTED (CDT)",
+      "position": null,
+      "team": null,
+      "bid_time": "Jun 10, 2:25 PM"
+    }
+  ]
+}
