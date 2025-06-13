@@ -38,9 +38,19 @@ def find_players_being_added(text):
             
             # Check for bid keywords near this player
             if player_name:
-                context_lines = lines[max(0, line_num-3):line_num+6]
-                has_bid = any(keyword in context_line for context_line in context_lines 
-                             for keyword in ['BID', 'SUBMITTED', 'PTY'])
+                # Use a much smaller, more precise context window
+                context_start = max(0, line_num - 2)
+                context_end = min(len(lines), line_num + 4)
+                context_lines = lines[context_start:context_end]
+                
+                # Look for bid keywords only in the immediate vicinity
+                has_bid = False
+                for context_line in context_lines:
+                    if any(keyword in context_line for keyword in ['BID', 'SUBMITTED', 'PTY']):
+                        has_bid = True
+                        break
+                
+                print(f"DEBUG: {player_name} - Context lines: {context_lines} - Has bid: {has_bid}")
                 
                 if has_bid:
                     # Find team
