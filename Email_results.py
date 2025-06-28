@@ -1,64 +1,3 @@
-import smtplib
-import json
-import os
-import re
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from datetime import datetime
-
-def load_email_config():
-    """Load email configuration from environment variables (GitHub Actions) or config.json (local)"""
-    
-    # Try environment variables first (GitHub Actions)
-    if all(os.getenv(var) for var in ['SENDER_EMAIL', 'SENDER_PASSWORD', 'EMAIL_TO']):
-        config = {
-            'smtp_server': os.getenv('SMTP_SERVER', 'smtp.gmail.com'),
-            'smtp_port': int(os.getenv('SMTP_PORT', 587)),
-            'sender_email': os.getenv('SENDER_EMAIL'),
-            'sender_password': os.getenv('SENDER_PASSWORD'),
-            'email_to': os.getenv('EMAIL_TO'),
-            'email_subject': os.getenv('EMAIL_SUBJECT', 'Current Fantrax Auctions - Will Process at ')
-        }
-        
-        # Optional CC
-        if os.getenv('EMAIL_CC'):
-            config['email_cc'] = os.getenv('EMAIL_CC')
-            
-        print("✓ Using environment variables for email config")
-        print(f"✓ Using email subject: '{config['email_subject']}'")
-        return config
-    
-    # Fallback to config.json for local development
-    try:
-        with open('config.json', 'r') as f:
-            config = json.load(f)
-        
-        # Check required email fields
-        required_fields = ['smtp_server', 'smtp_port', 'sender_email', 'sender_password', 'email_to', 'email_subject']
-        missing_fields = [field for field in required_fields if field not in config]
-        
-        if missing_fields:
-            print(f"Missing email configuration fields in config.json: {missing_fields}")
-            print("\nPlease add these email fields to your config.json:")
-            print('  "smtp_server": "smtp.gmail.com",')
-            print('  "smtp_port": 587,')
-            print('  "sender_email": "your_email@gmail.com",')
-            print('  "sender_password": "your_app_password",')
-            print('  "email_to": "recipient@gmail.com",')
-            print('  "email_cc": "optional_cc@gmail.com",')
-            print('  "email_subject": "Current Fantrax Auctions - Will Process at "')
-            return None
-        
-        # Debug: show what email_subject was loaded
-        print(f"✓ Using config.json for email config")
-        print(f"✓ Using email subject: '{config['email_subject']}'")
-        
-        return config
-        
-    except FileNotFoundError:
-        print("❌ No email configuration found (neither environment variables nor config.json)")
-        return None
-
 def send_auction_email():
     """Send email with auction summary"""
     
@@ -67,30 +6,62 @@ def send_auction_email():
     if not config:
         return False
     
-    # Check if email summary file exists
-    if not os.path.exists('email_summary.txt'):
-        print("❌ email_summary.txt not found. Run the auction scraper first.")
-        return False
+    # Check if auction_players.json exists and has data
+    auction_data = None
+    has_players = False
     
-    # Read email content
-    try:
-        with open('email_summary.txt', 'r') as f:
-            email_body = f.read()
-        print(f"✓ Read email_summary.txt - {len(email_body)} characters")
-        print(f"First 200 characters: {email_body[:200]}...")
-    except Exception as e:
-        print(f"❌ Error reading email_summary.txt: {e}")
-        return False
-    
-    # Check if there are actually players to report
-    if "Found 0 player(s)" in email_body:
-        print("❌ Found 0 players - not sending email.")
-        return True
-    elif len(email_body.strip()) < 50:
-        print(f"❌ Email body too short ({len(email_body.strip())} chars) - not sending email.")
-        return True
+    if os.path.exists('auction_players.json'):
+        try:
+            with open('auction_players.json', 'r') as f:
+                auction_data = json.load(f)
+            
+            # Check if there are any players in the data
+            if isinstance(auction_data, list):
+                has_players = len(auction_data) > 0
+            elif isinstance(auction_data, dict):
+                # If it's a dict, check if it has any meaningful data
+                has_players = len(auction_data) > 0 and any(auction_data.values())
+            
+            print(f"✓ Found auction_players.json with {len(auction_data) if isinstance(auction_data, list) else 'some'} records")
+            
+        except Exception as e:
+            print(f"❌ Error reading auction_players.json: {e}")
+            return False
     else:
-        print(f"✓ Email body looks good - proceeding to send email")
+        print("❌ auction_players.json not found")
+        return False
+    
+    # Determine email content based on whether there are players
+    if has_players:
+        # Check if email summary file exists for players
+        if not os.path.exists('email_summary.txt'):
+            print("❌ email_summary.txt not found. Run the auction scraper first.")
+            return False
+        
+        # Read email content
+        try:
+            with open('email_summary.txt', 'r') as f:
+                email_body = f.read()
+            print(f"✓ Read email_summary.txt - {len(email_body)} characters")
+        except Exception as e:
+            print(f"❌ Error reading email_summary.txt: {e}")
+            return False
+        
+        # Double-check that the email body actually contains player data
+        if "Found 0 player(s)" in email_body or len(email_body.strip()) < 50:
+            has_players = False
+    
+    # If no players, create a simple "no players" email
+    if not has_players:
+        email_body = f"""No players currently being bid on.
+
+The Fantrax auction monitor checked for pending auctions but found no active bidding at this time.
+
+Last checked: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+You will receive another alert when new auctions become available.
+"""
+        print("✓ No players found - sending 'no players' notification")
     
     # Extract auction deadline from email body and create custom subject
     auction_deadline = None
@@ -101,7 +72,10 @@ def send_auction_email():
     # Use the custom subject from config
     base_subject = config['email_subject']
     
-    if auction_deadline:
+    # Modify subject for no-players case
+    if not has_players:
+        email_subject = "Fantrax Auctions - No Active Bidding"
+    elif auction_deadline:
         # Convert "Jun 12, 2:00 AM" to "2am on June 12th"
         try:
             # Parse the deadline
@@ -217,73 +191,3 @@ def send_auction_email():
     except Exception as e:
         print(f"❌ Error sending email: {e}")
         return False
-
-def test_email_config():
-    """Test email configuration without sending auction data"""
-    config = load_email_config()
-    if not config:
-        return False
-    
-    try:
-        # Create test message
-        msg = MIMEMultipart()
-        msg['From'] = config['sender_email']
-        msg['To'] = config['email_to']
-        
-        # Add CC if specified
-        if 'email_cc' in config and config['email_cc']:
-            msg['Cc'] = config['email_cc']
-            recipients = [config['email_to'], config['email_cc']]
-        else:
-            recipients = [config['email_to']]
-        
-        msg['Subject'] = "Fantrax Auction Monitor - Test Email"
-        
-        test_body = f"""This is a test email from your Fantrax Auction Monitor.
-
-If you receive this email, your configuration is working correctly!
-
-Test sent at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-You should receive auction alerts at this email address when players are found.
-"""
-        
-        msg.attach(MIMEText(test_body, 'plain'))
-        
-        # Send test email
-        print(f"Sending test email to {config['email_to']}")
-        if 'email_cc' in config and config['email_cc']:
-            print(f"CC: {config['email_cc']}")
-            
-        server = smtplib.SMTP(config['smtp_server'], config['smtp_port'])
-        server.starttls()
-        server.login(config['sender_email'], config['sender_password'])
-        
-        text = msg.as_string()
-        server.sendmail(config['sender_email'], recipients, text)
-        server.quit()
-        
-        print("✅ Test email sent successfully!")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Test email failed: {e}")
-        return False
-
-if __name__ == "__main__":
-    print("Fantrax Auction Email Sender")
-    print("=" * 40)
-    
-    # Check if this is a test run
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "test":
-        print("Running email test...")
-        test_email_config()
-    else:
-        print("Sending auction alert email...")
-        success = send_auction_email()
-        
-        if success:
-            print("Email sending completed successfully.")
-        else:
-            print("Email sending failed. Check the error messages above.")
