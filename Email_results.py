@@ -12,18 +12,34 @@ def send_auction_email():
     
     if os.path.exists('auction_players.json'):
         try:
+            # Read the file content first to check if it's empty
             with open('auction_players.json', 'r') as f:
-                auction_data = json.load(f)
+                file_content = f.read().strip()
             
-            # Check if there are any players in the data
-            if isinstance(auction_data, list):
-                has_players = len(auction_data) > 0
-            elif isinstance(auction_data, dict):
-                # If it's a dict, check if it has any meaningful data
-                has_players = len(auction_data) > 0 and any(auction_data.values())
+            # If file is completely empty or just whitespace
+            if not file_content:
+                print("✓ Found auction_players.json but it's empty (blank file)")
+                has_players = False
+            else:
+                # Try to parse JSON
+                auction_data = json.loads(file_content)
+                
+                # Check if there are any players in the data
+                if isinstance(auction_data, list):
+                    has_players = len(auction_data) > 0
+                    print(f"✓ Found auction_players.json with {len(auction_data)} records")
+                elif isinstance(auction_data, dict):
+                    # If it's a dict, check if it has any meaningful data
+                    has_players = len(auction_data) > 0 and any(auction_data.values())
+                    print(f"✓ Found auction_players.json with dict data: {bool(has_players)}")
+                else:
+                    print(f"✓ Found auction_players.json with unexpected format: {type(auction_data)}")
+                    has_players = False
             
-            print(f"✓ Found auction_players.json with {len(auction_data) if isinstance(auction_data, list) else 'some'} records")
-            
+        except json.JSONDecodeError as e:
+            print(f"❌ auction_players.json contains invalid JSON: {e}")
+            print("Treating as 'no players' scenario")
+            has_players = False
         except Exception as e:
             print(f"❌ Error reading auction_players.json: {e}")
             return False
