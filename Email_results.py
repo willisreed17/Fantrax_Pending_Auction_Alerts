@@ -1,3 +1,42 @@
+import smtplib
+import json
+import os
+import re
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime
+
+def load_email_config():
+    """Load email configuration from config.json file"""
+    try:
+        with open('config.json', 'r') as f:
+            config = json.load(f)
+        
+        # Check required email fields
+        required_fields = ['smtp_server', 'smtp_port', 'sender_email', 'sender_password', 'email_to', 'email_subject']
+        missing_fields = [field for field in required_fields if field not in config]
+        
+        if missing_fields:
+            print(f"Missing email configuration fields in config.json: {missing_fields}")
+            print("\nPlease add these email fields to your config.json:")
+            print('  "smtp_server": "smtp.gmail.com",')
+            print('  "smtp_port": 587,')
+            print('  "sender_email": "your_email@gmail.com",')
+            print('  "sender_password": "your_app_password",')
+            print('  "email_to": "recipient@gmail.com",')
+            print('  "email_cc": "optional_cc@gmail.com",')
+            print('  "email_subject": "Current Fantrax Auctions - Will Process at "')
+            return None
+        
+        # Debug: show what email_subject was loaded
+        print(f"✓ Using email subject: '{config['email_subject']}'")
+        
+        return config
+        
+    except FileNotFoundError:
+        print("config.json not found.")
+        return None
+
 def send_auction_email():
     """Send email with auction summary"""
     
@@ -207,3 +246,73 @@ You will receive another alert when new auctions become available.
     except Exception as e:
         print(f"❌ Error sending email: {e}")
         return False
+
+def test_email_config():
+    """Test email configuration without sending auction data"""
+    config = load_email_config()
+    if not config:
+        return False
+    
+    try:
+        # Create test message
+        msg = MIMEMultipart()
+        msg['From'] = config['sender_email']
+        msg['To'] = config['email_to']
+        
+        # Add CC if specified
+        if 'email_cc' in config and config['email_cc']:
+            msg['Cc'] = config['email_cc']
+            recipients = [config['email_to'], config['email_cc']]
+        else:
+            recipients = [config['email_to']]
+        
+        msg['Subject'] = "Fantrax Auction Monitor - Test Email"
+        
+        test_body = f"""This is a test email from your Fantrax Auction Monitor.
+
+If you receive this email, your configuration is working correctly!
+
+Test sent at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+You should receive auction alerts at this email address when players are found.
+"""
+        
+        msg.attach(MIMEText(test_body, 'plain'))
+        
+        # Send test email
+        print(f"Sending test email to {config['email_to']}")
+        if 'email_cc' in config and config['email_cc']:
+            print(f"CC: {config['email_cc']}")
+            
+        server = smtplib.SMTP(config['smtp_server'], config['smtp_port'])
+        server.starttls()
+        server.login(config['sender_email'], config['sender_password'])
+        
+        text = msg.as_string()
+        server.sendmail(config['sender_email'], recipients, text)
+        server.quit()
+        
+        print("✅ Test email sent successfully!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Test email failed: {e}")
+        return False
+
+if __name__ == "__main__":
+    print("Fantrax Auction Email Sender")
+    print("=" * 40)
+    
+    # Check if this is a test run
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "test":
+        print("Running email test...")
+        test_email_config()
+    else:
+        print("Sending auction alert email...")
+        success = send_auction_email()
+        
+        if success:
+            print("Email sending completed successfully.")
+        else:
+            print("Email sending failed. Check the error messages above.")
